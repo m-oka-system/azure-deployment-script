@@ -202,10 +202,29 @@ resource "azapi_resource" "keyvault_secret_set" {
       }
       scriptContent = <<EOF
         set -e
-         az keyvault secret set --vault-name ${azurerm_key_vault.kv.name} --name MySecretName --value MySecretValue
-        echo "seed done"
+        echo "Starting Key Vault secret creation..."
+        %{for secret_name, secret_value in local.keyvault_secrets~}
+        echo "Checking if secret exists: ${secret_name}"
+        if ! az keyvault secret show --vault-name ${azurerm_key_vault.kv.name} --name ${secret_name} >/dev/null 2>&1; then
+          echo "Creating secret: ${secret_name}"
+          az keyvault secret set --vault-name ${azurerm_key_vault.kv.name} --name ${secret_name} --value "${secret_value}"
+        else
+          echo "Secret ${secret_name} already exists, skipping"
+        fi
+        %{endfor~}
+        echo "Secret creation process completed"
       EOF
     }
+  }
+
+  depends_on = [azurerm_private_endpoint.pe]
+}
+
+locals {
+  keyvault_secrets = {
+    "MySecretName1" = "MySecretValue1"
+    "MySecretName2" = "MySecretValue2"
+    "MySecretName3" = "MySecretValue3"
   }
 }
 
