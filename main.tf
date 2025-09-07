@@ -55,6 +55,7 @@ resource "azurerm_subnet" "subnet" {
   address_prefixes                  = each.value.address_prefixes
   default_outbound_access_enabled   = each.value.default_outbound_access_enabled
   private_endpoint_network_policies = each.value.private_endpoint_network_policies
+  service_endpoints                 = lookup(each.value, "service_endpoints", null) != null ? each.value.service_endpoints : null
 
   dynamic "delegation" {
     for_each = lookup(each.value, "service_delegation", null) != null ? [each.value.service_delegation] : []
@@ -165,6 +166,13 @@ resource "azurerm_storage_account" "deploy_script" {
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
+
+  network_rules {
+    bypass                     = ["AzureServices"]
+    default_action             = "Deny"
+    virtual_network_subnet_ids = [azurerm_subnet.subnet["ci"].id]
+    ip_rules                   = var.allowed_cidr
+  }
 }
 
 resource "azapi_resource" "keyvault_secret_set" {

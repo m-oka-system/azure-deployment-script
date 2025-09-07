@@ -32,6 +32,7 @@ variable "subnet" {
     address_prefixes                  = list(string)
     default_outbound_access_enabled   = bool
     private_endpoint_network_policies = string
+    service_endpoints                 = list(string)
     service_delegation = object({
       name    = string
       actions = list(string)
@@ -43,6 +44,7 @@ variable "subnet" {
       address_prefixes                  = ["10.10.0.0/24"]
       default_outbound_access_enabled   = false
       private_endpoint_network_policies = "Enabled"
+      service_endpoints                 = null
       service_delegation                = null
     }
     ci = {
@@ -50,6 +52,7 @@ variable "subnet" {
       address_prefixes                  = ["10.10.1.0/24"]
       default_outbound_access_enabled   = false
       private_endpoint_network_policies = "Disabled"
+      service_endpoints                 = ["Microsoft.Storage"]
       service_delegation = {
         name    = "Microsoft.ContainerInstance/containerGroups"
         actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
@@ -60,6 +63,7 @@ variable "subnet" {
       address_prefixes                  = ["10.10.2.0/24"]
       default_outbound_access_enabled   = false
       private_endpoint_network_policies = "Disabled"
+      service_endpoints                 = null
       service_delegation = {
         name    = "Microsoft.Network/applicationGateways"
         actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
@@ -70,6 +74,7 @@ variable "subnet" {
       address_prefixes                  = ["10.10.3.0/24"]
       default_outbound_access_enabled   = false
       private_endpoint_network_policies = "Disabled"
+      service_endpoints                 = null
       service_delegation                = null
     }
   }
