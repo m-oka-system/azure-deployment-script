@@ -145,7 +145,7 @@ resource "azurerm_key_vault" "kv" {
 # ------------------------------------------------------------------------------------------------------
 resource "azurerm_user_assigned_identity" "id" {
   for_each            = var.user_assigned_identity
-  name                = "id-${var.env}-${random_integer.num.result}"
+  name                = "id-${each.value.name}-${var.common.project}-${var.env}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 }
@@ -156,99 +156,3 @@ resource "azurerm_role_assignment" "role" {
   role_definition_name = each.value.role_definition_name
   principal_id         = azurerm_user_assigned_identity.id[each.value.target_identity].principal_id
 }
-
-# ------------------------------------------------------------------------------------------------------
-# Deployment Script
-# ------------------------------------------------------------------------------------------------------
-resource "azurerm_storage_account" "deploy_script" {
-  name                     = "stds${var.common.project}${var.env}${random_integer.num.result}"
-  resource_group_name      = azurerm_resource_group.main.name
-  location                 = azurerm_resource_group.main.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-
-  network_rules {
-    bypass                     = ["AzureServices"]
-    default_action             = "Deny"
-    virtual_network_subnet_ids = [azurerm_subnet.subnet["ci"].id]
-    ip_rules                   = var.allowed_cidr
-  }
-}
-
-resource "azapi_resource" "keyvault_secret_set" {
-  type      = "Microsoft.Resources/deploymentScripts@2023-08-01"
-  name      = "keyvault_secret_set"
-  parent_id = azurerm_resource_group.main.id
-  body = {
-    kind     = "AzureCLI"
-    location = azurerm_resource_group.main.location
-    identity = {
-      type = "userAssigned"
-      userAssignedIdentities = {
-        (azurerm_user_assigned_identity.id["ci"].id) = {}
-      }
-    }
-    properties = {
-      azCliVersion      = "2.52.0"
-      retentionInterval = "P1D"       # deploymentScript リソースを保持する期間
-      cleanupPreference = "OnSuccess" # スクリプトの実行が終了状態になった時にサポートリソースをクリーンアップする方法 (Always, OnSuccess, OnExpiration)
-      storageAccountSettings = {
-        storageAccountName = azurerm_storage_account.deploy_script.name
-      }
-      containerSettings = {
-        subnetIds = [
-          { id = azurerm_subnet.subnet["ci"].id, name = azurerm_subnet.subnet["ci"].name }
-        ]
-      }
-      scriptContent = <<EOF
-        set -e
-        echo "Starting Key Vault secret creation..."
-        %{for secret_name, secret_value in local.keyvault_secrets~}
-        echo "Checking if secret exists: ${secret_name}"
-        if ! az keyvault secret show --vault-name ${azurerm_key_vault.kv.name} --name ${secret_name} >/dev/null 2>&1; then
-          echo "Creating secret: ${secret_name}"
-          az keyvault secret set --vault-name ${azurerm_key_vault.kv.name} --name ${secret_name} --value "${secret_value}"
-        else
-          echo "Secret ${secret_name} already exists, skipping"
-        fi
-        %{endfor~}
-        echo "Secret creation process completed"
-      EOF
-    }
-  }
-
-  depends_on = [azurerm_private_endpoint.pe]
-}
-
-locals {
-  keyvault_secrets = {
-    "MySecretName1" = "MySecretValue1"
-    "MySecretName2" = "MySecretValue2"
-    "MySecretName3" = "MySecretValue3"
-  }
-}
-
-# 2025/9 時点では azurerm プロバイダーではサブネットの指定ができない
-# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_deployment_script_azure_cli
-# resource "azurerm_resource_deployment_script_azure_cli" "deploy_script" {
-#   name                = "keyvault_secret_set"
-#   resource_group_name = azurerm_resource_group.main.name
-#   location            = azurerm_resource_group.main.location
-#   version             = "2.52.0"
-#   retention_interval  = "P1D"
-#   cleanup_preference  = "OnSuccess"
-#   timeout             = "PT5M"
-
-#   script_content = <<EOF
-#     set -e
-#       az keyvault secret set --vault-name ${azurerm_key_vault.kv.name} --name MySecretName --value MySecretValue
-#     echo "seed done"
-#   EOF
-
-#   identity {
-#     type = "UserAssigned"
-#     identity_ids = [
-#       azurerm_user_assigned_identity.id["ci"].id
-#     ]
-#   }
-# }
