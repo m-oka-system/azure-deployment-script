@@ -137,8 +137,8 @@ variable "user_assigned_identity" {
     name = string
   }))
   default = {
-    ci = {
-      name = "ci"
+    ca = {
+      name = "ca"
     }
   }
 }
@@ -149,13 +149,9 @@ variable "role_assignment" {
     role_definition_name = string
   }))
   default = {
-    ci_key_vault_secrets_officer = {
-      target_identity      = "ci"
+    ca_key_vault_secrets_officer = {
+      target_identity      = "ca"
       role_definition_name = "Key Vault Secrets Officer"
-    }
-    ci_storage_file_data_privileged_contributor = {
-      target_identity      = "ci"
-      role_definition_name = "Storage File Data Privileged Contributor"
     }
   }
 }
