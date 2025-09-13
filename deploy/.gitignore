@@ -1,0 +1,43 @@
+# Terraform ファイル
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+.terraform.lock.hcl
+
+# 変数ファイル
+*.tfvars
+*.tfvars.json
+!dev.tfvars
+!prod.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI設定ファイル
+.terraformrc
+terraform.rc
+
+# ログファイル
+*.log
+
+# 環境変数
+.env
+.env.*
+
+# バックアップファイル
+*.backup
+*.bak
+
+# AIツール
+.claude/
+.vscode/
+.github/*
+CLAUDE.md
+
+# Github Actions
+!.github/workflows/
+!.github/workflows/*.yml
+*.secrets*
