@@ -109,7 +109,7 @@ resource "azapi_resource" "keyvault_secret_set" {
           name = "TF_VAR_allowed_cidr", value = jsonencode(var.allowed_cidr)
         },
         {
-          name = "TF_VERSION", value = "1.13.2"
+          name = "TF_VERSION", value = var.tf_version
         },
       ]
       scriptContent = <<BASH

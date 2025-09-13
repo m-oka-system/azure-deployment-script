@@ -18,5 +18,9 @@ variable "env" {
 variable "az_cli_version" {
   type    = string
   default = "2.52.0"
+}
 
+variable "tf_version" {
+  type    = string
+  default = "1.13.2"
 }
